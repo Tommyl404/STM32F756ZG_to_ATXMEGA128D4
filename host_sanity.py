@@ -28,11 +28,13 @@ except Exception as exc:  # pragma: no cover
 
 
 def send_cmd(ser, cmd: str, data: bytes):
+    """Send a command and payload, raising ``TimeoutError`` on write issues."""
     ser.reset_input_buffer()
-    ser.write(cmd.encode())
-    ser.write(binascii.hexlify(data))
-    ser.write(b"\n")
-    ser.flush()
+    payload = cmd.encode() + binascii.hexlify(data) + b"\n"
+    try:
+        ser.write(payload)
+    except serial.SerialTimeoutException as exc:
+        raise TimeoutError(f"Timed out writing '{cmd}' command to device") from exc
 
 
 def read_resp(ser, timeout: float = 5.0) -> bytes:
@@ -69,7 +71,6 @@ def check_echo(ser, timeout: float = 2.0) -> None:
         line = ser.readline().decode(errors="ignore").strip()
         if not line:
             continue
-        print("echo debug:", line)
         if line.startswith("t") and line[1:] == test.hex():
             return
     raise TimeoutError("No echo response from device")
@@ -98,13 +99,9 @@ def run_device(port: str):
     pt = bytes.fromhex("00112233445566778899aabbccddeeff")
     try:
         check_echo(ser)
-    except TimeoutError as exc:
-        ser.close()
-        raise SystemExit(str(exc))
-    send_cmd(ser, "k", key)
-    time.sleep(0.1)
-    send_cmd(ser, "p", pt)
-    try:
+        send_cmd(ser, "k", key)
+        time.sleep(0.1)
+        send_cmd(ser, "p", pt)
         ct = read_resp(ser)
     except TimeoutError as exc:
         ser.close()
