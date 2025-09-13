@@ -42,8 +42,10 @@ def read_resp(ser, timeout: float = 5.0) -> bytes:
     ``timeout`` seconds.
     """
     buf = ""
-    deadline = time.time() + timeout
-    while time.time() < deadline:
+    # Use a monotonic clock so adjustments to the system time don't
+    # cause the timeout loop to run indefinitely.
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
         line = ser.readline().decode(errors="ignore").strip()
         if not line:
             continue
@@ -60,8 +62,10 @@ def check_echo(ser, timeout: float = 2.0) -> None:
     """Verify UART link by sending a test byte and expecting it back."""
     test = b"\xAA"
     send_cmd(ser, "t", test)
-    deadline = time.time() + timeout
-    while time.time() < deadline:
+    # ``time.monotonic`` avoids issues if the system clock changes while
+    # we're waiting for the echo response.
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
         line = ser.readline().decode(errors="ignore").strip()
         if not line:
             continue
@@ -86,7 +90,8 @@ def run_device(port: str):
     if serial is None:
         raise SystemExit(f"pyserial required: {SERIAL_IMPORT_ERROR}")
     try:
-        ser = serial.Serial(port, 115200, timeout=0.5)
+        print(f"Connecting to {port}...", flush=True)
+        ser = serial.Serial(port, 115200, timeout=0.5, write_timeout=0.5)
     except Exception as exc:
         raise SystemExit(f"Failed to open {port}: {exc}")
     key = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
