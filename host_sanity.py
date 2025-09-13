@@ -28,11 +28,23 @@ except Exception as exc:  # pragma: no cover
 
 
 def send_cmd(ser, cmd: str, data: bytes):
-    ser.reset_input_buffer()
-    ser.write(cmd.encode())
-    ser.write(binascii.hexlify(data))
-    ser.write(b"\n")
-    ser.flush()
+    """Send a command and payload, raising ``TimeoutError`` on write issues."""
+    # ``reset_input_buffer`` may block indefinitely on some devices. Instead
+    # perform a non-blocking clear by reading any pending bytes.
+    try:
+        waiting = ser.in_waiting
+    except Exception:
+        waiting = 0
+    if waiting:
+        try:
+            ser.read(waiting)
+        except Exception:
+            pass
+    payload = cmd.encode() + binascii.hexlify(data) + b"\n"
+    try:
+        ser.write(payload)
+    except serial.SerialTimeoutException as exc:
+        raise TimeoutError(f"Timed out writing '{cmd}' command to device") from exc
 
 
 def read_resp(ser, timeout: float = 5.0) -> bytes:
@@ -42,8 +54,10 @@ def read_resp(ser, timeout: float = 5.0) -> bytes:
     ``timeout`` seconds.
     """
     buf = ""
-    deadline = time.time() + timeout
-    while time.time() < deadline:
+    # Use a monotonic clock so adjustments to the system time don't
+    # cause the timeout loop to run indefinitely.
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
         line = ser.readline().decode(errors="ignore").strip()
         if not line:
             continue
@@ -60,12 +74,13 @@ def check_echo(ser, timeout: float = 2.0) -> None:
     """Verify UART link by sending a test byte and expecting it back."""
     test = b"\xAA"
     send_cmd(ser, "t", test)
-    deadline = time.time() + timeout
-    while time.time() < deadline:
+    # ``time.monotonic`` avoids issues if the system clock changes while
+    # we're waiting for the echo response.
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
         line = ser.readline().decode(errors="ignore").strip()
         if not line:
             continue
-        print("echo debug:", line)
         if line.startswith("t") and line[1:] == test.hex():
             return
     raise TimeoutError("No echo response from device")
@@ -86,20 +101,17 @@ def run_device(port: str):
     if serial is None:
         raise SystemExit(f"pyserial required: {SERIAL_IMPORT_ERROR}")
     try:
-        ser = serial.Serial(port, 115200, timeout=0.5)
+        print(f"Connecting to {port}...", flush=True)
+        ser = serial.Serial(port, 115200, timeout=0.5, write_timeout=0.5, dsrdtr=False)
     except Exception as exc:
         raise SystemExit(f"Failed to open {port}: {exc}")
     key = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
     pt = bytes.fromhex("00112233445566778899aabbccddeeff")
     try:
         check_echo(ser)
-    except TimeoutError as exc:
-        ser.close()
-        raise SystemExit(str(exc))
-    send_cmd(ser, "k", key)
-    time.sleep(0.1)
-    send_cmd(ser, "p", pt)
-    try:
+        send_cmd(ser, "k", key)
+        time.sleep(0.1)
+        send_cmd(ser, "p", pt)
         ct = read_resp(ser)
     except TimeoutError as exc:
         ser.close()
