@@ -1,0 +1,272 @@
+   1               		.file	"simpleserial-aes.c"
+   2               	__SP_H__ = 0x3e
+   3               	__SP_L__ = 0x3d
+   4               	__SREG__ = 0x3f
+   5               	__RAMPZ__ = 0x3b
+   6               	__CCP__ = 0x34
+   7               	__tmp_reg__ = 0
+   8               	__zero_reg__ = 1
+   9               		.text
+  10               	.Ltext0:
+  11               		.cfi_sections	.debug_frame
+  12               	.global	handle_echo
+  14               	handle_echo:
+  15               	.LFB13:
+  16               		.file 1 "simpleserial-aes.c"
+   1:simpleserial-aes.c **** #include "hal.h"
+   2:simpleserial-aes.c **** #include "simpleserial.h"
+   3:simpleserial-aes.c **** #include "aes.h"
+   4:simpleserial-aes.c **** #include <string.h>
+   5:simpleserial-aes.c **** 
+   6:simpleserial-aes.c **** static uint8_t key[16];
+   7:simpleserial-aes.c **** static uint8_t out[16];
+   8:simpleserial-aes.c **** 
+   9:simpleserial-aes.c **** uint8_t handle_key(uint8_t *k, uint8_t len){
+  10:simpleserial-aes.c ****     if(len != 16) return 0x01;
+  11:simpleserial-aes.c ****     memcpy(key, k, 16);
+  12:simpleserial-aes.c ****     return 0x00;
+  13:simpleserial-aes.c **** }
+  14:simpleserial-aes.c **** 
+  15:simpleserial-aes.c **** uint8_t handle_pt(uint8_t *pt, uint8_t len){
+  16:simpleserial-aes.c ****     if(len != 16) return 0x01;
+  17:simpleserial-aes.c ****     trigger_high();
+  18:simpleserial-aes.c ****     AES128_ECB_encrypt(pt, key, out);
+  19:simpleserial-aes.c ****     trigger_low();
+  20:simpleserial-aes.c ****     simpleserial_put('r', 16, out);
+  21:simpleserial-aes.c ****     return 0x00;
+  22:simpleserial-aes.c **** }
+  23:simpleserial-aes.c **** 
+  24:simpleserial-aes.c **** uint8_t handle_echo(uint8_t *in, uint8_t len){
+  17               		.loc 1 24 0
+  18               		.cfi_startproc
+  19               	.LVL0:
+  20               	/* prologue: function */
+  21               	/* frame size = 0 */
+  22               	/* stack size = 0 */
+  23               	.L__stack_usage = 0
+  25:simpleserial-aes.c ****     simpleserial_put('t', len, in);
+  24               		.loc 1 25 0
+  25 0000 AC01      		movw r20,r24
+  26 0002 84E7      		ldi r24,lo8(116)
+  27               	.LVL1:
+  28 0004 0E94 0000 		call simpleserial_put
+  29               	.LVL2:
+  26:simpleserial-aes.c ****     return 0x00;
+  27:simpleserial-aes.c **** }
+  30               		.loc 1 27 0
+  31 0008 80E0      		ldi r24,0
+  32 000a 0895      		ret
+  33               		.cfi_endproc
+  34               	.LFE13:
+  36               	.global	handle_key
+  38               	handle_key:
+  39               	.LFB11:
+   9:simpleserial-aes.c ****     if(len != 16) return 0x01;
+  40               		.loc 1 9 0
+  41               		.cfi_startproc
+  42               	.LVL3:
+  43               	/* prologue: function */
+  44               	/* frame size = 0 */
+  45               	/* stack size = 0 */
+  46               	.L__stack_usage = 0
+  47 000c FC01      		movw r30,r24
+  10:simpleserial-aes.c ****     memcpy(key, k, 16);
+  48               		.loc 1 10 0
+  49 000e 6031      		cpi r22,lo8(16)
+  50 0010 01F4      		brne .L4
+  51               	.LVL4:
+  52               	.LBB4:
+  53               	.LBB5:
+  11:simpleserial-aes.c ****     return 0x00;
+  54               		.loc 1 11 0
+  55 0012 90E1      		ldi r25,lo8(16)
+  56 0014 A0E0      		ldi r26,lo8(key)
+  57 0016 B0E0      		ldi r27,hi8(key)
+  58               		0:
+  59 0018 0190      		ld r0,Z+
+  60 001a 0D92      		st X+,r0
+  61 001c 9A95      		dec r25
+  62 001e 01F4      		brne 0b
+  63               	.LVL5:
+  64 0020 80E0      		ldi r24,0
+  65               	.LVL6:
+  66 0022 0895      		ret
+  67               	.LVL7:
+  68               	.L4:
+  69               	.LBE5:
+  70               	.LBE4:
+  10:simpleserial-aes.c ****     memcpy(key, k, 16);
+  71               		.loc 1 10 0
+  72 0024 81E0      		ldi r24,lo8(1)
+  73               	.LVL8:
+  13:simpleserial-aes.c **** 
+  74               		.loc 1 13 0
+  75 0026 0895      		ret
+  76               		.cfi_endproc
+  77               	.LFE11:
+  79               	.global	handle_pt
+  81               	handle_pt:
+  82               	.LFB12:
+  15:simpleserial-aes.c ****     if(len != 16) return 0x01;
+  83               		.loc 1 15 0
+  84               		.cfi_startproc
+  85               	.LVL9:
+  86 0028 CF93      		push r28
+  87               	.LCFI0:
+  88               		.cfi_def_cfa_offset 4
+  89               		.cfi_offset 28, -3
+  90               	/* prologue: function */
+  91               	/* frame size = 0 */
+  92               	/* stack size = 1 */
+  93               	.L__stack_usage = 1
+  16:simpleserial-aes.c ****     trigger_high();
+  94               		.loc 1 16 0
+  95 002a 6031      		cpi r22,lo8(16)
+  96 002c 01F4      		brne .L8
+  97               	.LVL10:
+  98               	.LBB8:
+  99               	.LBB9:
+  17:simpleserial-aes.c ****     AES128_ECB_encrypt(pt, key, out);
+ 100               		.loc 1 17 0
+ 101 002e C1E0      		ldi r28,lo8(1)
+ 102 0030 C093 0506 		sts 1541,r28
+  18:simpleserial-aes.c ****     trigger_low();
+ 103               		.loc 1 18 0
+ 104 0034 40E0      		ldi r20,lo8(out)
+ 105 0036 50E0      		ldi r21,hi8(out)
+ 106 0038 60E0      		ldi r22,lo8(key)
+ 107 003a 70E0      		ldi r23,hi8(key)
+ 108               	.LVL11:
+ 109 003c 0E94 0000 		call AES128_ECB_encrypt
+ 110               	.LVL12:
+  19:simpleserial-aes.c ****     simpleserial_put('r', 16, out);
+ 111               		.loc 1 19 0
+ 112 0040 C093 0606 		sts 1542,r28
+  20:simpleserial-aes.c ****     return 0x00;
+ 113               		.loc 1 20 0
+ 114 0044 40E0      		ldi r20,lo8(out)
+ 115 0046 50E0      		ldi r21,hi8(out)
+ 116 0048 60E1      		ldi r22,lo8(16)
+ 117 004a 82E7      		ldi r24,lo8(114)
+ 118 004c 0E94 0000 		call simpleserial_put
+ 119               	.LVL13:
+ 120 0050 80E0      		ldi r24,0
+ 121 0052 00C0      		rjmp .L7
+ 122               	.LVL14:
+ 123               	.L8:
+ 124               	.LBE9:
+ 125               	.LBE8:
+  16:simpleserial-aes.c ****     trigger_high();
+ 126               		.loc 1 16 0
+ 127 0054 81E0      		ldi r24,lo8(1)
+ 128               	.LVL15:
+ 129               	.L7:
+ 130               	/* epilogue start */
+  22:simpleserial-aes.c **** 
+ 131               		.loc 1 22 0
+ 132 0056 CF91      		pop r28
+ 133 0058 0895      		ret
+ 134               		.cfi_endproc
+ 135               	.LFE12:
+ 137               		.section	.text.startup,"ax",@progbits
+ 138               	.global	main
+ 140               	main:
+ 141               	.LFB14:
+  28:simpleserial-aes.c **** 
+  29:simpleserial-aes.c **** int main(void){
+ 142               		.loc 1 29 0
+ 143               		.cfi_startproc
+ 144               	/* prologue: function */
+ 145               	/* frame size = 0 */
+ 146               	/* stack size = 0 */
+ 147               	.L__stack_usage = 0
+  30:simpleserial-aes.c ****     platform_init();
+ 148               		.loc 1 30 0
+ 149 0000 0E94 0000 		call platform_init
+ 150               	.LVL16:
+  31:simpleserial-aes.c ****     init_uart();
+ 151               		.loc 1 31 0
+ 152 0004 0E94 0000 		call init_uart0
+ 153               	.LVL17:
+  32:simpleserial-aes.c ****     trigger_setup();
+ 154               		.loc 1 32 0
+ 155 0008 81E0      		ldi r24,lo8(1)
+ 156 000a 8093 0106 		sts 1537,r24
+  33:simpleserial-aes.c ****     simpleserial_init();
+ 157               		.loc 1 33 0
+ 158 000e 0E94 0000 		call simpleserial_init
+ 159               	.LVL18:
+  34:simpleserial-aes.c ****     simpleserial_addcmd('k', 16, handle_key);
+ 160               		.loc 1 34 0
+ 161 0012 40E0      		ldi r20,lo8(gs(handle_key))
+ 162 0014 50E0      		ldi r21,hi8(gs(handle_key))
+ 163 0016 60E1      		ldi r22,lo8(16)
+ 164 0018 70E0      		ldi r23,0
+ 165 001a 8BE6      		ldi r24,lo8(107)
+ 166 001c 0E94 0000 		call simpleserial_addcmd
+ 167               	.LVL19:
+  35:simpleserial-aes.c ****     simpleserial_addcmd('p', 16, handle_pt);
+ 168               		.loc 1 35 0
+ 169 0020 40E0      		ldi r20,lo8(gs(handle_pt))
+ 170 0022 50E0      		ldi r21,hi8(gs(handle_pt))
+ 171 0024 60E1      		ldi r22,lo8(16)
+ 172 0026 70E0      		ldi r23,0
+ 173 0028 80E7      		ldi r24,lo8(112)
+ 174 002a 0E94 0000 		call simpleserial_addcmd
+ 175               	.LVL20:
+  36:simpleserial-aes.c ****     simpleserial_addcmd('t', 0, handle_echo);
+ 176               		.loc 1 36 0
+ 177 002e 40E0      		ldi r20,lo8(gs(handle_echo))
+ 178 0030 50E0      		ldi r21,hi8(gs(handle_echo))
+ 179 0032 60E0      		ldi r22,0
+ 180 0034 70E0      		ldi r23,0
+ 181 0036 84E7      		ldi r24,lo8(116)
+ 182 0038 0E94 0000 		call simpleserial_addcmd
+ 183               	.LVL21:
+ 184               	.L10:
+  37:simpleserial-aes.c **** 
+  38:simpleserial-aes.c ****     while(1){
+  39:simpleserial-aes.c ****         simpleserial_get();
+ 185               		.loc 1 39 0 discriminator 1
+ 186 003c 0E94 0000 		call simpleserial_get
+ 187               	.LVL22:
+ 188 0040 00C0      		rjmp .L10
+ 189               		.cfi_endproc
+ 190               	.LFE14:
+ 192               		.local	out
+ 193               		.comm	out,16,1
+ 194               		.local	key
+ 195               		.comm	key,16,1
+ 196               		.text
+ 197               	.Letext0:
+ 198               		.file 2 "/usr/lib/avr/include/stdint.h"
+ 199               		.file 3 "/usr/lib/avr/include/avr/iox128d3.h"
+ 200               		.file 4 ".././simpleserial/simpleserial.h"
+ 201               		.file 5 ".././crypto/tiny-AES128-C/aes.h"
+ 202               		.file 6 ".././hal/hal.h"
+ 203               		.file 7 ".././hal/xmega/uart.h"
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 simpleserial-aes.c
+     /tmp/ccnJm0n8.s:2      *ABS*:000000000000003e __SP_H__
+     /tmp/ccnJm0n8.s:3      *ABS*:000000000000003d __SP_L__
+     /tmp/ccnJm0n8.s:4      *ABS*:000000000000003f __SREG__
+     /tmp/ccnJm0n8.s:5      *ABS*:000000000000003b __RAMPZ__
+     /tmp/ccnJm0n8.s:6      *ABS*:0000000000000034 __CCP__
+     /tmp/ccnJm0n8.s:7      *ABS*:0000000000000000 __tmp_reg__
+     /tmp/ccnJm0n8.s:8      *ABS*:0000000000000001 __zero_reg__
+     /tmp/ccnJm0n8.s:14     .text:0000000000000000 handle_echo
+     /tmp/ccnJm0n8.s:38     .text:000000000000000c handle_key
+     /tmp/ccnJm0n8.s:193    .bss:0000000000000010 key
+     /tmp/ccnJm0n8.s:81     .text:0000000000000028 handle_pt
+                             .bss:0000000000000000 out
+     /tmp/ccnJm0n8.s:140    .text.startup:0000000000000000 main
+
+UNDEFINED SYMBOLS
+simpleserial_put
+AES128_ECB_encrypt
+platform_init
+init_uart0
+simpleserial_init
+simpleserial_addcmd
+simpleserial_get
+__do_clear_bss
