@@ -42,8 +42,10 @@ def read_resp(ser, timeout: float = 5.0) -> bytes:
     ``timeout`` seconds.
     """
     buf = ""
-    deadline = time.time() + timeout
-    while time.time() < deadline:
+    # Use a monotonic clock so adjustments to the system time don't
+    # cause the timeout loop to run indefinitely.
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
         line = ser.readline().decode(errors="ignore").strip()
         if not line:
             continue
@@ -60,8 +62,10 @@ def check_echo(ser, timeout: float = 2.0) -> None:
     """Verify UART link by sending a test byte and expecting it back."""
     test = b"\xAA"
     send_cmd(ser, "t", test)
-    deadline = time.time() + timeout
-    while time.time() < deadline:
+    # ``time.monotonic`` avoids issues if the system clock changes while
+    # we're waiting for the echo response.
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
         line = ser.readline().decode(errors="ignore").strip()
         if not line:
             continue
