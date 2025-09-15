@@ -1,7 +1,11 @@
 #include "uart.h"
+#include <stdint.h>
 
 /*! Define that selects the Usart used in example. */
 #define USART USARTC0
+
+/* Default baud rate for SimpleSerial */
+#define BAUD 115200
 
 #define TIMEOUT 0
 #define BYTE_REC 1
@@ -22,11 +26,14 @@ void												init_uart0
 	/* USARTC0, 8 Data bits, No Parity, 1 Stop bit. */
 	USART_Format_Set(&USART, USART_CHSIZE_8BIT_gc, USART_PMODE_DISABLED_gc, false);
 
-        /* Set Baudrate to 115200 bps @ 32 MHz:
-         * Baudrate select = (F_CPU/(16*Baud)) - 1
-         *                 = 17
+        /* Compute baud rate divider based on F_CPU so the UART stays
+         * in sync regardless of the system clock frequency.  The
+         * hardware only needs the baud select value when the scale is
+         * zero, so we can calculate it directly here instead of using a
+         * hard-coded constant that assumed a specific clock rate.
          */
-        USART_Baudrate_Set(&USART, 17, 0);
+        uint16_t bsel = (F_CPU / (16UL * BAUD)) - 1;
+        USART_Baudrate_Set(&USART, bsel, 0);
 
 	/* Enable both RX and TX. */
 	USART_Rx_Enable(&USART);
