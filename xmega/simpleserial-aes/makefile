@@ -42,7 +42,7 @@ EXTRA_OPTS = NO_EXTRA_OPTS
 CFLAGS += -D$(EXTRA_OPTS)
 
 # default system clock for CW-Lite XMEGA
-F_CPU ?= 32000000
+F_CPU ?= 7372800
 
 
 ifeq ($(CRYPTO_TARGET),)
